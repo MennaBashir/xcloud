@@ -1,7 +1,7 @@
 """File browser API — browse directories and view files."""
 
 import os
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse
 
 from Data.models import User
@@ -86,3 +86,18 @@ async def download_file(
         filename=os.path.basename(abs_path),
         media_type="application/octet-stream",
     )
+
+
+@router.post("/save-recording")
+async def save_recording(
+    file: UploadFile = File(..., description="Recording file to save"),
+    filename: str | None = Form(None, description="Optional override filename"),
+    user: User = Depends(auth_service.get_current_user),
+):
+    """
+    Save an uploaded meeting recording into ~/Xcloud/recordings.
+    Returns the saved file's path, name, and size.
+    """
+    data = await file.read()
+    name = filename or file.filename or "recording.webm"
+    return files_service.save_recording(data, name)
